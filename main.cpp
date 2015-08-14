@@ -7,6 +7,7 @@
 //
 
 #include "simple_Polygon.h"
+#include "simple_Polygon.cpp"
 #include <iostream>
 
 int main(int argc, const char * argv[]) {
