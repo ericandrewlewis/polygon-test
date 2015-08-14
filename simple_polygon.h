@@ -11,11 +11,21 @@
 
 #include <stdlib.h>
 
+/**
+ * A single x,y coordinate point.
+ */
 typedef struct {
     double x, y;
 } Point;
 
+/**
+ * A Polygon data structure.
+ */
 struct Polygon {
+    /**
+     * @constructor
+     * @param npts The number of distinct points on the polygon.
+     */
     Polygon(int npts) {
         n = npts;
         V = (Point*)malloc(npts * sizeof(Point));
@@ -26,16 +36,27 @@ struct Polygon {
     }
 
 public:
+    /**
+     * The number of points of the polygon.
+     */
     int n;
-    Point *V;  // should have n elements, V[n-1] != V[0]
+    /**
+     * A pointer that should hold the points.
+     *
+     * The points should be a list of all distinct points.
+     * The last point defined implicitly connects to the first point.
+     */
+    Point *V;
 };
 
 typedef struct Polygon Polygon;
 
-// simple_Polygon(): test if a Polygon P is simple or not
-//     Input:  Pn = a polygon with n vertices V[]
-//     Return: FALSE(0) = is NOT simple
-//             TRUE(1)  = IS simple
+/**
+ * Test whether a polygon is simple or not (i.e. none of its lines intersect).
+ *
+ * @param Polygon
+ * @return True if the polygon is simple, false if not.
+ */
 bool simple_Polygon( Polygon &Pn );
 
 #endif /* SIMPLE_POLYGON_H_ */

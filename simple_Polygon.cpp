@@ -3,7 +3,6 @@
 // Written by Dan Sunday (2001) (http://geomalgorithms.com/a09-_intersect-3.html)
 // Modified by Glenn Burkhardt (2014) to integrate it with the AVL balanced tree
 
-
 // Copyright 2001, softSurfer (www.softsurfer.com)
 // This code may be freely used and modified for any purpose
 // providing that this copyright notice is included with it.
@@ -28,43 +27,55 @@
 //        such as an AVL, a 2-3, or a red-black tree
 //===================================================================
 
+/*
+ * An enumerator type to define whether an "event" (line segment endpoint)
+ * is a "left" endpoint (lower x coordinate) or a "right" endpoint
+ * (higher x coordinate).
+ */
 enum SEG_SIDE { LEFT, RIGHT };
 
-// xyorder(): determines the xy lexicographical order of two points
-//      returns: (+1) if p1 > p2; (-1) if p1 < p2; and 0 if equal
+/*
+ * Determine the xy lexicographical order of two points.
+ *
+ * @return 1 if p1 > p2, -1 if p1 < p2, and 0 if equal.
+ */
 int xyorder( Point* p1, Point* p2 )
 {
-    // test the x-coord first
     if (p1->x > p2->x) return 1;
     if (p1->x < p2->x) return (-1);
-    // and test the y-coord second
     if (p1->y > p2->y) return 1;
     if (p1->y < p2->y) return (-1);
-    // when you exclude all other possibilities, what remains is...
-    return 0;  // they are the same point
+    return 0;
 }
 
-// isLeft(): tests if point P2 is Left|On|Right of the line P0 to P1.
-//      returns: >0 for left, 0 for on, and <0 for right of the line.
-//      (see the January 2001 Algorithm on Area of Triangles)
-inline double
-isLeft( Point P0, Point P1, Point P2 )
+/*
+ * Check if a point is left, on, or right of a line.
+ *(see the January 2001 Algorithm on Area of Triangles)
+ *
+ * @param Point P0 The point to test.
+ * @param Point P1 One endpoint of the line.
+ * @param Point P2 The other endpoint of the line.
+ * @return >0 if the point is left of the line, 0 if it is on, <0 if right.
+ */
+inline double isLeft( Point P0, Point P1, Point P2 )
 {
     return (P1.x - P0.x)*(P2.y - P0.y) - (P2.x - P0.x)*(P1.y - P0.y);
 }
-//===================================================================
 
 class SLseg;
+
 // EventQueue Class
 
-// Event element data struct
+/*
+ * An Event.
+ */
 typedef struct _event Event;
 struct _event {
-    int      edge;         // polygon edge i is V[i] to V[i+1]
-    enum SEG_SIDE type;    // event type: LEFT or RIGHT vertex
-    Point*   eV;           // event vertex
-    SLseg* seg;            // segment in tree
-    Event* otherEnd;       // segment is [this.eV, otherEnd.Ev]
+    int           edge;     // polygon edge i is V[i] to V[i+1]
+    enum SEG_SIDE type;     // event type: LEFT or RIGHT vertex
+    Point*        eV;       // event vertex
+    SLseg*        seg;      // segment in tree
+    Event*        otherEnd; // segment is [this.eV, otherEnd.Ev]
 };
 
 int E_compare( const void* v1, const void* v2 ) // qsort compare two events
@@ -140,12 +151,10 @@ Event* EventQueue::next()
     else
         return Eq[ix++];
 }
-//===================================================================
 
-
-// SweepLine Class
-
-// SweepLine segment data struct
+/**
+ * SweepLine segment data struct
+ */
 class SLseg : public Comparable<SLseg*> {
 public:
     int      edge;         // polygon edge i is V[i] to V[i+1]
