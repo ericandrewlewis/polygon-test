@@ -165,8 +165,8 @@ EventQueue::EventQueue( Polygon &P )
     ix = 0;
     // 2 vertex events for each edge.
     ne = 2 * P.n;
-    Edata = (Event*)new Event[ne];
-    Eq = (Event**)new Event*[ne];
+    Edata = new Event[ne];
+    Eq = new Event*[ne];
     // init Eq array pointers
     for (int i=0; i < ne; i++)
         Eq[i] = &Edata[i];
