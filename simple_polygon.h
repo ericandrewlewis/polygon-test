@@ -42,8 +42,8 @@ public:
     int n;
     /**
      * A pointer that should hold the points.
-     *
-     * The points should be a list of all distinct points.
+     * 
+     * The points should be a list of all distinct points. 
      * The last point defined implicitly connects to the first point.
      */
     Point *V;
@@ -52,7 +52,7 @@ public:
 typedef struct Polygon Polygon;
 
 /**
- * Test whether a polygon is simple or not (i.e. none of its lines intersect).
+ * Check whether a polygon is simple (none of its lines intersect) or not.
  *
  * @param Polygon
  * @return True if the polygon is simple, false if not.
