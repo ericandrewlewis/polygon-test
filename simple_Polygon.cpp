@@ -35,7 +35,7 @@ enum SEG_SIDE { LEFT, RIGHT };
  * Determine the xy order of two points.
  *
  * Ordered first by ascending x coordinate, and then ascending y coordinate.
- * 
+ *
  * @return 1 if p1 > p2, -1 if p1 < p2, and 0 if equal.
  */
 int xyorder( Point* p1, Point* p2 )
@@ -50,7 +50,7 @@ int xyorder( Point* p1, Point* p2 )
 /*
  * Check if a point is left, on, or right of a line.
  *(see the January 2001 Algorithm on Area of Triangles)
- * 
+ *
  * @param Point P0 The point to test.
  * @param Point P1 One endpoint of the line.
  * @param Point P2 The other endpoint of the line.
@@ -62,7 +62,7 @@ inline double isLeft( Point P0, Point P1, Point P2 )
 }
 
 // This is oddly separated from the class definition so _event is aware of it.
-class SLseg;
+class SweepLineSegment;
 
 // Make `Event` an alias to the `_event` data structure. Weird.
 typedef struct _event Event;
@@ -75,7 +75,7 @@ struct _event {
      * polygon edge i is V[i] to V[i+1]
      */
     int edge;
-
+    
     /*
      * Whether the event is the LEFT or RIGHT vertex.
      */
@@ -85,11 +85,11 @@ struct _event {
      * The event vertex?
      */
     Point* eV;
-
+    
     /*
      * The segment in tree.
      */
-    SLseg* seg;
+    SweepLineSegment* seg;
     
     /*
      * The segment is [this.eV, otherEnd.Ev].
@@ -104,7 +104,7 @@ int E_compare( const void* v1, const void* v2 )
 {
     Event** pe1 = (Event**)v1;
     Event** pe2 = (Event**)v2;
-
+    
     int r = xyorder( (*pe1)->eV, (*pe2)->eV );
     if (r == 0) {
         if ((*pe1)->type == (*pe2)->type) return 0;
@@ -122,17 +122,17 @@ class EventQueue {
      * Total number of events in array.
      */
     int numberOfEvents;
-
+    
     /*
      * The index of the next event on the queue.
      */
     int nextEventIndex;
-
+    
     /*
      * The array of all events.
      */
     Event* Edata;
-
+    
     /*
      * Sorted list of event pointers.
      */
@@ -146,7 +146,7 @@ public:
         delete[] Eq;
         delete[] Edata;
     }
-
+    
     // next event on queue
     Event* next();
 };
@@ -162,11 +162,11 @@ EventQueue::EventQueue( Polygon &P )
     numberOfEvents = 2 * P.n;
     Edata = new Event[numberOfEvents];
     Eq = new Event*[numberOfEvents];
-
+    
     // Initialize Eq array pointers
     for ( int i = 0; i < numberOfEvents; i++ )
         Eq[i] = &Edata[i];
-
+    
     // Initialize the event queue with edge segment endpoints.
     for ( int i = 0; i < P.n; i++ ) {
         // init data for edge i
@@ -176,10 +176,10 @@ EventQueue::EventQueue( Polygon &P )
         Eq[2*i]->otherEnd = Eq[2*i+1];
         Eq[2*i+1]->otherEnd = Eq[2*i];
         Eq[2*i]->seg = Eq[2*i+1]->seg = 0;
-
+        
         Point *pi1 = ( i + 1 < P.n ) ? &( P.V[i+1] ) : &( P.V[0] );
         Eq[2*i+1]->eV = pi1;
-
+        
         // Set the event as either left or right bound.
         if ( xyorder( &P.V[i], pi1) < 0 ) {
             Eq[2*i]->type   = LEFT;
@@ -190,7 +190,7 @@ EventQueue::EventQueue( Polygon &P )
             Eq[2*i+1]->type = LEFT;
         }
     }
-
+    
     // Sort the queue array by ascending x and then ascending y coordinates.
     ::qsort( Eq, numberOfEvents, sizeof(Event*), E_compare );
 }
@@ -211,7 +211,7 @@ Event* EventQueue::next()
 /*
  * SweepLine segment data struct
  */
-class SLseg : public Comparable<SLseg*> {
+class SweepLineSegment : public Comparable<SweepLineSegment*> {
 public:
     /*
      * polygon edge i is V[i] to V[i+1]
@@ -236,23 +236,23 @@ public:
     /*
      * The segment above this one.
      */
-    SLseg*   above;
+    SweepLineSegment*   above;
     
     /*
      * The segment below this one.
      */
-    SLseg*   below;
-
-    SLseg() : Comparable<SLseg*>(this) {}
-    ~SLseg() {}
-
+    SweepLineSegment*   below;
+    
+    SweepLineSegment() : Comparable<SweepLineSegment*>(this) {}
+    ~SweepLineSegment() {}
+    
     /*
      * Define a custom comparator for whether
-     * 
-     * @param SLseg a
+     *
+     * @param SweepLineSegment a
      * @return true if 'this' is below 'a'
      */
-    bool operator< (const SLseg& a)
+    bool operator< (const SweepLineSegment& a)
     {
         // First check if these two segments share a left vertex
         if (this->lPp == a.lPp) {
@@ -263,29 +263,29 @@ public:
             else
                 return false;
         }
-
+        
         return isLeft(this->lP, this->rP, a.lP) > 0;
     }
-
+    
     /*
-     * Whether the instance is equal to another SLseg
+     * Whether the instance is equal to another SweepLineSegment
      *
-     * @param SLseg segment to compare.
+     * @param SweepLineSegment segment to compare.
      */
-    bool operator== (const SLseg& a)
+    bool operator== (const SweepLineSegment& a)
     {
         return this->edge == a.edge;
     }
-
-    cmp_t Compare(SLseg* key) const
+    
+    cmp_t Compare(SweepLineSegment* key) const
     {
         return (*key == *this) ? EQ_CMP
-            : ((*key < *this) ? MIN_CMP : MAX_CMP);
+        : ((*key < *this) ? MIN_CMP : MAX_CMP);
     }
 };
 
-// Make an AvlNode type specific for SLsegments avaible under the alias Tnode.
-typedef AvlNode<SLseg*> Tnode;
+// Make an AvlNode type specific for SweepLineSegmentments avaible under the alias Tnode.
+typedef AvlNode<SweepLineSegment*> Tnode;
 
 /*
  * The sweep line stores all line segments that are intersecting
@@ -296,111 +296,111 @@ class SweepLine {
      * Number of vertices in polygon.
      */
     int      nv;
-
+    
     /*
      * Initial Polygon.
      */
     Polygon* Pn;
-
+    
     /*
      * Balanced binary tree.
      */
-    AvlTree<SLseg*> Tree;
+    AvlTree<SweepLineSegment*> Tree;
 public:
     // constructor
     SweepLine(Polygon &P)
     { nv = P.n; Pn = &P; }
-
+    
     // destructor
     ~SweepLine(void)
     {
         cleanTree(Tree.myRoot);
     }
-
+    
     void cleanTree(Tnode *p)
     {
         if (!p) return;
         delete p->Data();
-        cleanTree(p->Subtree(AvlNode<SLseg*>::LEFT));
-        cleanTree(p->Subtree(AvlNode<SLseg*>::RIGHT));
+        cleanTree(p->Subtree(AvlNode<SweepLineSegment*>::LEFT));
+        cleanTree(p->Subtree(AvlNode<SweepLineSegment*>::RIGHT));
     }
-
-    SLseg*   add( Event* );
-    SLseg*   find( Event* );
-    bool     intersect( SLseg*, SLseg* );
-    void     remove( SLseg* );
+    
+    SweepLineSegment*   add( Event* );
+    SweepLineSegment*   find( Event* );
+    bool     intersect( SweepLineSegment*, SweepLineSegment* );
+    void     remove( SweepLineSegment* );
 };
 
 /*
  * Add an event (line segment endpoint) to the sweep line.
  *
  * @param Event* E Endpoint to be added.
- * @return SLseg* s The new line segment.
+ * @return SweepLineSegment* s The new line segment.
  */
-SLseg* SweepLine::add( Event* E )
+SweepLineSegment* SweepLine::add( Event* event )
 {
-    // Fill in SLseg element data.
-    SLseg* s = new SLseg;
-    s->edge  = E->edge;
-    E->seg = s;
-
+    // Create a line segment from the event.
+    SweepLineSegment* lineSegment = new SweepLineSegment;
+    lineSegment->edge  = event->edge;
+    event->seg = lineSegment;
+    
     // If it is being added, then it must be a LEFT edge event
     // but need to determine which endpoint is the left one
-    Point* v1 = &(Pn->V[s->edge]);
-    Point* eN = (s->edge+1 < Pn->n ? &(Pn->V[s->edge+1]):&(Pn->V[0]));
+    Point* v1 = &(Pn->V[lineSegment->edge]);
+    Point* eN = (lineSegment->edge+1 < Pn->n ? &(Pn->V[lineSegment->edge+1]):&(Pn->V[0]));
     Point* v2 = eN;
     if (xyorder( v1, v2) < 0) { // determine which is leftmost
-        s->lPp = v1;
-        s->lP = *v1;
-        s->rP = *v2;
+        lineSegment->lPp = v1;
+        lineSegment->lP = *v1;
+        lineSegment->rP = *v2;
     }
     else {
-        s->rP = *v1;
-        s->lP = *v2;
-        s->lPp = v2;
+        lineSegment->rP = *v1;
+        lineSegment->lP = *v2;
+        lineSegment->lPp = v2;
     }
-    s->above = (SLseg*)0;
-    s->below = (SLseg*)0;
-
+    lineSegment->above = (SweepLineSegment*)0;
+    lineSegment->below = (SweepLineSegment*)0;
+    
     // Add a node to the balanced binary tree.
-    Tnode* node = Tree.Insert(s);
+    Tnode* node = Tree.Insert(lineSegment);
     Tnode* nextNode = Tree.Next(node);
     Tnode* previousNode = Tree.Prev(node);
-
+    
     if (nextNode != (Tnode*)0) {
-        s->above = (SLseg*)nextNode->Data();
-        s->above->below = s;
+        lineSegment->above = (SweepLineSegment*)nextNode->Data();
+        lineSegment->above->below = lineSegment;
     }
     if (previousNode != (Tnode*)0) {
-        s->below = (SLseg*)previousNode->Data();
-        s->below->above = s;
+        lineSegment->below = (SweepLineSegment*)previousNode->Data();
+        lineSegment->below->above = lineSegment;
     }
-    return s;
+    return lineSegment;
 }
 
 /*
  * Remove a line segment from the sweep line.
  *
- * @param SLseg* s The line segment to be removed.
+ * @param SweepLineSegment* s The line segment to be removed.
  */
-void SweepLine::remove( SLseg* s )
+void SweepLine::remove( SweepLineSegment* s )
 {
     // remove the node from the balanced binary tree
     Tnode* node = Tree.Search(s);
-
+    
     // If the node can't be found, bail.
     if ( node == (Tnode*)0 )
         return;
-
+    
     // Get the above and below segments pointing to each other.
     Tnode* nextNode = Tree.Next(node);
     if ( nextNode != (Tnode*)0 ) {
-        SLseg* sx = (SLseg*)(nextNode->Data());
+        SweepLineSegment* sx = (SweepLineSegment*)(nextNode->Data());
         sx->below = s->below;
     }
     Tnode* previousNode = Tree.Prev(node);
     if ( previousNode != (Tnode*)0 ) {
-        SLseg* sp = (SLseg*)(previousNode->Data());
+        SweepLineSegment* sp = (SweepLineSegment*)(previousNode->Data());
         sp->above = s->above;
     }
     // Now can safely remove it.
@@ -412,24 +412,24 @@ void SweepLine::remove( SLseg* s )
 /*
  * Check whether 2 segments intersect.
  *
- * @param SLseg* s1 First segment.
- * @param SLseg* s2 Other segment.
+ * @param SweepLineSegment* s1 First segment.
+ * @param SweepLineSegment* s2 Other segment.
  * @return True if segments intersect, false if not.
  */
-bool SweepLine::intersect( SLseg* s1, SLseg* s2)
+bool SweepLine::intersect( SweepLineSegment* s1, SweepLineSegment* s2 )
 {
     // Bail early if either segment doesn't exist.
-    if (s1 == (SLseg*)0 || s2 == (SLseg*)0)
+    if (s1 == (SweepLineSegment*)0 || s2 == (SweepLineSegment*)0)
         return false;
-
+    
     // check for consecutive edges in polygon.
     int e1 = s1->edge;
     int e2 = s2->edge;
-
+    
     // no non-simple intersect since consecutive
     if ( ( (e1+1)%nv == e2 ) || ( e1 == (e2+1)%nv ) )
         return false;
-
+    
     // test for existence of an intersect point
     double lsign, rsign;
     lsign = isLeft(s1->lP, s1->rP, s2->lP);    // s2 left point sign
@@ -450,30 +450,34 @@ bool SweepLine::intersect( SLseg* s1, SLseg* s2)
  * @param Polygon
  * @return True if the polygon is simple, false if not.
  */
-bool simple_Polygon( Polygon &Pn )
+bool simple_Polygon( Polygon &polygon )
 {
-    EventQueue eventQueue(Pn);
-    SweepLine SL(Pn);
-    // the current event
-    Event* event;
-    // the current SweepLine segment.
-    SLseg* s;
-
+    EventQueue eventQueue(polygon);
+    SweepLine sweepline(polygon);
+    Event* currentEvent;
+    SweepLineSegment* currentSegment;
+    
     // Loop through all sorted events in the queue.
     // Events are only left or right vertices since no new events will be added (an intersect => Done).
-    while ( (event = eventQueue.next()) ) {
-        if ( event->type == LEFT ) {     // process a left vertex
-            s = SL.add(event);         // add it to the sweep line
-            if ( SL.intersect( s, s->above ) )
-                return false;      // Pn is NOT simple
-            if ( SL.intersect( s, s->below ) )
-                return false;      // Pn is NOT simple
+    while ( (currentEvent = eventQueue.next()) ) {
+        // Process a left endpoint.
+        if ( currentEvent->type == LEFT ) {
+            // Add it to the sweep line.
+            currentSegment = sweepline.add(currentEvent);
+            // If the current segment intersects with its sweep line neighbor, the polygon is not simple.
+            if ( sweepline.intersect( currentSegment, currentSegment->above ) )
+                return false;
+            if ( sweepline.intersect( currentSegment, currentSegment->below ) )
+                return false;
         }
-        else {                     // process a right vertex
-            s = event->otherEnd->seg;
-            if ( SL.intersect( s->above, s->below ) )
-                return false;      // Pn is NOT simple
-            SL.remove(s);          // remove it from the sweep line
+        // process a right endpoint.
+        else {
+            currentSegment = currentEvent->otherEnd->seg;
+            // If the new neighbor segments intersect, the polygon is not simple.
+            if ( sweepline.intersect( currentSegment->above, currentSegment->below ) )
+                return false;
+            // Remove it from the sweep line.
+            sweepline.remove( currentSegment );
         }
     }
     return true;      // Pn is simple
