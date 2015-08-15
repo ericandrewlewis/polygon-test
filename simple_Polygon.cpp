@@ -288,17 +288,20 @@ public:
 typedef AvlNode<SLseg*> Tnode;
 
 /*
- * The SweepLine.
+ * The sweep line stores all line segments that are intersecting
+ * at the currently processing line segment endpoint.
  */
 class SweepLine {
     /*
      * Number of vertices in polygon.
      */
     int      nv;
+
     /*
      * Initial Polygon.
      */
     Polygon* Pn;
+
     /*
      * Balanced binary tree.
      */
@@ -329,18 +332,19 @@ public:
 };
 
 /*
+ * Add an event (line segment endpoint) to the sweep line.
  *
- *
- * @param Event* E
+ * @param Event* E Endpoint to be added.
+ * @return SLseg* s The new line segment.
  */
 SLseg* SweepLine::add( Event* E )
 {
-    // fill in SLseg element data
+    // Fill in SLseg element data.
     SLseg* s = new SLseg;
     s->edge  = E->edge;
     E->seg = s;
 
-    // if it is being added, then it must be a LEFT edge event
+    // If it is being added, then it must be a LEFT edge event
     // but need to determine which endpoint is the left one
     Point* v1 = &(Pn->V[s->edge]);
     Point* eN = (s->edge+1 < Pn->n ? &(Pn->V[s->edge+1]):&(Pn->V[0]));
@@ -358,47 +362,51 @@ SLseg* SweepLine::add( Event* E )
     s->above = (SLseg*)0;
     s->below = (SLseg*)0;
 
-    // add a node to the balanced binary tree
-    Tnode* nd = Tree.Insert(s);
-    Tnode* nx = Tree.Next(nd);
-    Tnode* np = Tree.Prev(nd);
+    // Add a node to the balanced binary tree.
+    Tnode* node = Tree.Insert(s);
+    Tnode* nextNode = Tree.Next(node);
+    Tnode* previousNode = Tree.Prev(node);
 
-    if (nx != (Tnode*)0) {
-        s->above = (SLseg*)nx->Data();
+    if (nextNode != (Tnode*)0) {
+        s->above = (SLseg*)nextNode->Data();
         s->above->below = s;
     }
-    if (np != (Tnode*)0) {
-        s->below = (SLseg*)np->Data();
+    if (previousNode != (Tnode*)0) {
+        s->below = (SLseg*)previousNode->Data();
         s->below->above = s;
     }
     return s;
 }
 
 /*
+ * Remove a line segment from the sweep line.
  *
- *
- * @param SLseg* s
+ * @param SLseg* s The line segment to be removed.
  */
 void SweepLine::remove( SLseg* s )
 {
     // remove the node from the balanced binary tree
-    Tnode* nd = Tree.Search(s);
-    if (nd == (Tnode*)0)
-        return;      // not there !
+    Tnode* node = Tree.Search(s);
 
-    // get the above and below segments pointing to each other
-    Tnode* nx = Tree.Next(nd);
-    if (nx != (Tnode*)0) {
-        SLseg* sx = (SLseg*)(nx->Data());
+    // If the node can't be found, bail.
+    if ( node == (Tnode*)0 )
+        return;
+
+    // Get the above and below segments pointing to each other.
+    Tnode* nextNode = Tree.Next(node);
+    if ( nextNode != (Tnode*)0 ) {
+        SLseg* sx = (SLseg*)(nextNode->Data());
         sx->below = s->below;
     }
-    Tnode* np = Tree.Prev(nd);
-    if (np != (Tnode*)0) {
-        SLseg* sp = (SLseg*)(np->Data());
+    Tnode* previousNode = Tree.Prev(node);
+    if ( previousNode != (Tnode*)0 ) {
+        SLseg* sp = (SLseg*)(previousNode->Data());
         sp->above = s->above;
     }
-    Tree.Delete(nd->Key());       // now can safely remove it
-    delete s;                     // note:  s == nd->Data()
+    // Now can safely remove it.
+    Tree.Delete( node->Key() );
+    // note:  s == nd->Data()
+    delete s;
 }
 
 /*
@@ -444,27 +452,26 @@ bool SweepLine::intersect( SLseg* s1, SLseg* s2)
  */
 bool simple_Polygon( Polygon &Pn )
 {
-    EventQueue  Eq(Pn);
-    SweepLine   SL(Pn);
+    EventQueue eventQueue(Pn);
+    SweepLine SL(Pn);
     // the current event
-    Event*      e;
-    // the current SL segment
-    SLseg*      s;
+    Event* event;
+    // the current SweepLine segment.
+    SLseg* s;
 
-    // This loop processes all events in the sorted queue
-    // Events are only left or right vertices since
-    // No new events will be added (an intersect => Done)
-    while ((e = Eq.next())) {      // while there are events
-        if (e->type == LEFT) {     // process a left vertex
-            s = SL.add(e);         // add it to the sweep line
-            if (SL.intersect( s, s->above))
+    // Loop through all sorted events in the queue.
+    // Events are only left or right vertices since no new events will be added (an intersect => Done).
+    while ( (event = eventQueue.next()) ) {
+        if ( event->type == LEFT ) {     // process a left vertex
+            s = SL.add(event);         // add it to the sweep line
+            if ( SL.intersect( s, s->above ) )
                 return false;      // Pn is NOT simple
-            if (SL.intersect( s, s->below))
+            if ( SL.intersect( s, s->below ) )
                 return false;      // Pn is NOT simple
         }
         else {                     // process a right vertex
-            s = e->otherEnd->seg;
-            if (SL.intersect( s->above, s->below))
+            s = event->otherEnd->seg;
+            if ( SL.intersect( s->above, s->below ) )
                 return false;      // Pn is NOT simple
             SL.remove(s);          // remove it from the sweep line
         }
