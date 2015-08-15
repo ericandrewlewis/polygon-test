@@ -35,7 +35,9 @@
 enum SEG_SIDE { LEFT, RIGHT };
 
 /*
- * Determine the xy lexicographical order of two points.
+ * Determine the xy order of two points.
+ *
+ * Ordered first by ascending x coordinate, and then ascending y coordinate.
  *
  * @return 1 if p1 > p2, -1 if p1 < p2, and 0 if equal.
  */
@@ -66,22 +68,47 @@ class SLseg;
 
 // EventQueue Class
 
-/*
- * An Event.
- */
+
+// Make `Event` an alias to the `_event` data structure. Weird.
 typedef struct _event Event;
+
+/**
+ * An event, which is a point
+ */
 struct _event {
-    int           edge;     // polygon edge i is V[i] to V[i+1]
-    enum SEG_SIDE type;     // event type: LEFT or RIGHT vertex
-    Point*        eV;       // event vertex
-    SLseg*        seg;      // segment in tree
-    Event*        otherEnd; // segment is [this.eV, otherEnd.Ev]
+    /*
+     * The index of the edge among the other polygon edges.
+     */
+    int edge;
+
+    /*
+     * Whether the event is the LEFT or RIGHT vertex.
+     */
+    enum SEG_SIDE type;
+
+    /*
+     * The event vertex?
+     */
+    Point* eV;
+
+    /*
+     * The segment in tree.
+     */
+    SLseg* seg;
+
+    /*
+     * The segment is [this.eV, otherEnd.Ev].
+     */
+    Event* otherEnd;
 };
 
-int E_compare( const void* v1, const void* v2 ) // qsort compare two events
+/*
+ * qsort compare two events.
+ */
+int E_compare( const void* v1, const void* v2 )
 {
-    Event**    pe1 = (Event**)v1;
-    Event**    pe2 = (Event**)v2;
+    Event** pe1 = (Event**)v1;
+    Event** pe2 = (Event**)v2;
 
     int r = xyorder( (*pe1)->eV, (*pe2)->eV );
     if (r == 0) {
@@ -92,31 +119,56 @@ int E_compare( const void* v1, const void* v2 ) // qsort compare two events
         return r;
 }
 
-// the EventQueue is a presorted array (no insertions needed)
+/*
+ * The EventQueue is a presorted array (no insertions needed).
+ */
 class EventQueue {
-    int      ne;               // total number of events in array
-    int      ix;               // index of next event on queue
-    Event*   Edata;            // array of all events
-    Event**  Eq;               // sorted list of event pointers
+    /*
+     * Total number of events in array.
+     */
+    int ne;
+
+    /*
+     * The index of the next event on the queue.
+     */
+    int ix;
+
+    /*
+     * The array of all events.
+     */
+    Event* Edata;
+
+    /*
+     * Sorted list of event pointers.
+     */
+    Event** Eq;
 public:
-    EventQueue(Polygon &P);    // constructor
-    ~EventQueue(void)          // destructor
+    // constructor
+    EventQueue(Polygon &P);
+    // destructor
+    ~EventQueue(void)
     {
         delete[] Eq;
         delete[] Edata;
     }
 
-    Event*   next();                    // next event on queue
+    // next event on queue
+    Event*   next();
 };
 
-// EventQueue Routines
+/*
+ * @constructor
+ * @param Polygon The polygon.
+ */
 EventQueue::EventQueue( Polygon &P )
 {
     ix = 0;
-    ne = 2 * P.n;          // 2 vertex events for each edge
+    // 2 vertex events for each edge.
+    ne = 2 * P.n;
     Edata = (Event*)new Event[ne];
     Eq = (Event**)new Event*[ne];
-    for (int i=0; i < ne; i++)          // init Eq array pointers
+    // init Eq array pointers
+    for (int i=0; i < ne; i++)
         Eq[i] = &Edata[i];
 
     // Initialize event queue with edge segment endpoints
