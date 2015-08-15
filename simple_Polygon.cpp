@@ -153,7 +153,7 @@ public:
     }
 
     // next event on queue
-    Event*   next();
+    Event* next();
 };
 
 /*
@@ -167,12 +167,14 @@ EventQueue::EventQueue( Polygon &P )
     ne = 2 * P.n;
     Edata = new Event[ne];
     Eq = new Event*[ne];
+
     // init Eq array pointers
-    for (int i=0; i < ne; i++)
+    for ( int i = 0; i < ne; i++ )
         Eq[i] = &Edata[i];
 
-    // Initialize event queue with edge segment endpoints
-    for (int i=0; i < P.n; i++) {       // init data for edge i
+    // Initialize the event queue with edge segment endpoints.
+    for ( int i = 0; i < P.n; i++ ) {
+        // init data for edge i
         Eq[2*i]->edge = i;
         Eq[2*i+1]->edge = i;
         Eq[2*i]->eV   = &(P.V[i]);
