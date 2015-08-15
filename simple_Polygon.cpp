@@ -300,7 +300,7 @@ class SweepLine {
     /*
      * Initial Polygon.
      */
-    Polygon* Pn;
+    Polygon* polygon;
     
     /*
      * Balanced binary tree.
@@ -309,7 +309,7 @@ class SweepLine {
 public:
     // constructor
     SweepLine(Polygon &P)
-    { nv = P.n; Pn = &P; }
+    { nv = P.n; polygon = &P; }
     
     // destructor
     ~SweepLine(void)
@@ -346,18 +346,20 @@ SweepLineSegment* SweepLine::add( Event* event )
     
     // If it is being added, then it must be a LEFT edge event
     // but need to determine which endpoint is the left one
-    Point* v1 = &(Pn->V[lineSegment->edge]);
-    Point* eN = (lineSegment->edge+1 < Pn->n ? &(Pn->V[lineSegment->edge+1]):&(Pn->V[0]));
-    Point* v2 = eN;
-    if (xyorder( v1, v2) < 0) { // determine which is leftmost
-        lineSegment->lPp = v1;
-        lineSegment->lP = *v1;
-        lineSegment->rP = *v2;
+    Point* endpoint1 = &(polygon->V[lineSegment->edge]);
+    Point* eN = (lineSegment->edge+1 < polygon->n ? &(polygon->V[lineSegment->edge+1]) : &(polygon->V[0]));
+    Point* endpoint2 = eN;
+
+    // Determine which is leftmost.
+    if (xyorder( endpoint1, endpoint2 ) < 0) {
+        lineSegment->lPp = endpoint1;
+        lineSegment->lP = *endpoint1;
+        lineSegment->rP = *endpoint2;
     }
     else {
-        lineSegment->rP = *v1;
-        lineSegment->lP = *v2;
-        lineSegment->lPp = v2;
+        lineSegment->rP = *endpoint1;
+        lineSegment->lP = *endpoint2;
+        lineSegment->lPp = endpoint2;
     }
     lineSegment->above = (SweepLineSegment*)0;
     lineSegment->below = (SweepLineSegment*)0;
@@ -367,11 +369,11 @@ SweepLineSegment* SweepLine::add( Event* event )
     Tnode* nextNode = Tree.Next(node);
     Tnode* previousNode = Tree.Prev(node);
     
-    if (nextNode != (Tnode*)0) {
+    if ( nextNode != (Tnode*)0 ) {
         lineSegment->above = (SweepLineSegment*)nextNode->Data();
         lineSegment->above->below = lineSegment;
     }
-    if (previousNode != (Tnode*)0) {
+    if ( previousNode != (Tnode*)0 ) {
         lineSegment->below = (SweepLineSegment*)previousNode->Data();
         lineSegment->below->above = lineSegment;
     }
@@ -383,10 +385,10 @@ SweepLineSegment* SweepLine::add( Event* event )
  *
  * @param SweepLineSegment* s The line segment to be removed.
  */
-void SweepLine::remove( SweepLineSegment* s )
+void SweepLine::remove( SweepLineSegment* lineSegment )
 {
     // remove the node from the balanced binary tree
-    Tnode* node = Tree.Search(s);
+    Tnode* node = Tree.Search(lineSegment);
     
     // If the node can't be found, bail.
     if ( node == (Tnode*)0 )
@@ -396,17 +398,17 @@ void SweepLine::remove( SweepLineSegment* s )
     Tnode* nextNode = Tree.Next(node);
     if ( nextNode != (Tnode*)0 ) {
         SweepLineSegment* sx = (SweepLineSegment*)(nextNode->Data());
-        sx->below = s->below;
+        sx->below = lineSegment->below;
     }
     Tnode* previousNode = Tree.Prev(node);
     if ( previousNode != (Tnode*)0 ) {
         SweepLineSegment* sp = (SweepLineSegment*)(previousNode->Data());
-        sp->above = s->above;
+        sp->above = lineSegment->above;
     }
     // Now can safely remove it.
     Tree.Delete( node->Key() );
-    // note:  s == nd->Data()
-    delete s;
+    // note:  lineSegment == nd->Data()
+    delete lineSegment;
 }
 
 /*
@@ -480,5 +482,6 @@ bool simple_Polygon( Polygon &polygon )
             sweepline.remove( currentSegment );
         }
     }
-    return true;      // Pn is simple
+    // If no intersections were found after the sweepline has passed all events, the polygon is simple.
+    return true;
 }
