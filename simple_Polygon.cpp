@@ -1,4 +1,3 @@
-// ===================================================================
 //simple_Polygon.cpp - Check if a polygon is simple
 // Written by Dan Sunday (2001) (http://geomalgorithms.com/a09-_intersect-3.html)
 // Modified by Glenn Burkhardt (2014) to integrate it with the AVL balanced tree
@@ -18,14 +17,12 @@
 #include "Avl.h"
 #include "simple_polygon.h"
 
-
 // Assume that classes are already given for the objects:
 //    Point with 2D coordinates {float x, y;}
 //    Polygon with n vertices {int n; Point *V;} with V[n]=V[0]
 //    Tnode is a node element structure for a BBT
 //    BBT is a class for a Balanced Binary Tree
 //        such as an AVL, a 2-3, or a red-black tree
-//===================================================================
 
 /*
  * An enumerator type to define whether an "event" (line segment endpoint)
@@ -474,4 +471,3 @@ bool simple_Polygon( Polygon &Pn )
     }
     return true;      // Pn is simple
 }
-//===================================================================
