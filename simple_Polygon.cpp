@@ -61,18 +61,15 @@ inline double isLeft( Point P0, Point P1, Point P2 )
     return (P1.x - P0.x)*(P2.y - P0.y) - (P2.x - P0.x)*(P1.y - P0.y);
 }
 
-// This is oddly separated from the class definition so _event is aware of it.
-class SweepLineSegment;
-
 // Make `Event` an alias to the `_event` data structure. Weird.
 typedef struct _event Event;
 
 /**
- * An event, which is a point
+ * An event, which relates to a line segment endpoint.
  */
 struct _event {
     /*
-     * polygon edge i is V[i] to V[i+1]
+     * The numerical representation of what "side" of the shape the event is on.
      */
     int edge;
     
@@ -82,9 +79,9 @@ struct _event {
     enum SEG_SIDE type;
     
     /*
-     * The event vertex?
+     * The x,y coordinate of the line segment's endpoint.
      */
-    Point* eV;
+    Point* point;
     
     /*
      * The segment in tree.
@@ -92,7 +89,7 @@ struct _event {
     SweepLineSegment* seg;
     
     /*
-     * The segment is [this.eV, otherEnd.Ev].
+     * The segment is [this.point, otherEnd.Ev].
      */
     Event* otherEnd;
 };
@@ -105,7 +102,7 @@ int E_compare( const void* v1, const void* v2 )
     Event** pe1 = (Event**)v1;
     Event** pe2 = (Event**)v2;
     
-    int r = xyorder( (*pe1)->eV, (*pe2)->eV );
+    int r = xyorder( (*pe1)->point, (*pe2)->point );
     if (r == 0) {
         if ((*pe1)->type == (*pe2)->type) return 0;
         if ((*pe1)->type == LEFT) return -1;
@@ -115,11 +112,14 @@ int E_compare( const void* v1, const void* v2 )
 }
 
 /*
- * The EventQueue is a presorted array (no insertions needed).
+ * The event queue.
+ *
+ * Given a polygon, for every line segment endpoint that makes up the shape
+ * an event is created and sorted for a sweepline to pass through.
  */
 class EventQueue {
     /*
-     * Total number of events in array.
+     * Total number of events in the queue.
      */
     int numberOfEvents;
     
@@ -169,24 +169,25 @@ EventQueue::EventQueue( Polygon &P )
     
     // Initialize the event queue with edge segment endpoints.
     for ( int i = 0; i < P.n; i++ ) {
-        // init data for edge i
+        // Define the event data based on the point.
         Eq[2*i]->edge = i;
-        Eq[2*i+1]->edge = i;
-        Eq[2*i]->eV   = &(P.V[i]);
+        Eq[2*i]->point = &(P.V[i]);
         Eq[2*i]->otherEnd = Eq[2*i+1];
-        Eq[2*i+1]->otherEnd = Eq[2*i];
         Eq[2*i]->seg = Eq[2*i+1]->seg = 0;
         
+        Eq[2*i+1]->edge = i;
+        Eq[2*i+1]->otherEnd = Eq[2*i];
+        
         Point *pi1 = ( i + 1 < P.n ) ? &( P.V[i+1] ) : &( P.V[0] );
-        Eq[2*i+1]->eV = pi1;
+        Eq[2*i+1]->point = pi1;
         
         // Set the event as either left or right bound.
         if ( xyorder( &P.V[i], pi1) < 0 ) {
-            Eq[2*i]->type   = LEFT;
+            Eq[2*i]->type = LEFT;
             Eq[2*i+1]->type = RIGHT;
         }
         else {
-            Eq[2*i]->type   = RIGHT;
+            Eq[2*i]->type = RIGHT;
             Eq[2*i+1]->type = LEFT;
         }
     }
@@ -208,9 +209,6 @@ Event* EventQueue::next()
         return Eq[nextEventIndex++];
 }
 
-/*
- * SweepLine segment data struct
- */
 class SweepLineSegment : public Comparable<SweepLineSegment*> {
 public:
     /*
@@ -221,17 +219,17 @@ public:
     /*
      * leftmost vertex point.
      */
-    Point    lP;
+    Point    leftPoint;
     
     /*
      * rightmost vertex point.
      */
-    Point    rP;
+    Point    rightPoint;
     
     /*
      * The pointer to leftmost vertex in poly V.
      */
-    Point*   lPp;
+    Point*   leftPointPointer;
     
     /*
      * The segment above this one.
@@ -247,24 +245,24 @@ public:
     ~SweepLineSegment() {}
     
     /*
-     * Define a custom comparator for whether
+     * Compare two sweep line segments by which is more "left".
      *
-     * @param SweepLineSegment a
-     * @return true if 'this' is below 'a'
+     * @param SweepLineSegment a The other sweep line segment to compare to.
+     * @return True if the class instance is below
      */
-    bool operator< (const SweepLineSegment& a)
+    bool operator< (const SweepLineSegment& otherLineSegment)
     {
-        // First check if these two segments share a left vertex
-        if (this->lPp == a.lPp) {
+        // If these two segments share a left vertex, compare the right points.
+        if (this->leftPointPointer == otherLineSegment.leftPointPointer) {
             // Same point - the two segments share a vertex.
             // use y coord of right end points
-            if (this->rP.y < a.rP.y)
+            if (this->rightPoint.y < otherLineSegment.rightPoint.y)
                 return true;
             else
                 return false;
         }
         
-        return isLeft(this->lP, this->rP, a.lP) > 0;
+        return isLeft(this->leftPoint, this->rightPoint, otherLineSegment.leftPoint) > 0;
     }
     
     /*
@@ -334,32 +332,32 @@ public:
 /*
  * Add an event (line segment endpoint) to the sweep line.
  *
- * @param Event* E Endpoint to be added.
+ * @param Event* E Event to add to the sweep line.
  * @return SweepLineSegment* s The new line segment.
  */
 SweepLineSegment* SweepLine::add( Event* event )
 {
     // Create a line segment from the event.
     SweepLineSegment* lineSegment = new SweepLineSegment;
-    lineSegment->edge  = event->edge;
+    lineSegment->edge = event->edge;
     event->seg = lineSegment;
     
     // If it is being added, then it must be a LEFT edge event
-    // but need to determine which endpoint is the left one
-    Point* endpoint1 = &(polygon->V[lineSegment->edge]);
+    // but need to determine which endpoint is the left one.
+    Point* endpoint1 = &( polygon->V[lineSegment->edge] );
     Point* eN = (lineSegment->edge+1 < polygon->n ? &(polygon->V[lineSegment->edge+1]) : &(polygon->V[0]));
     Point* endpoint2 = eN;
-
-    // Determine which is leftmost.
-    if (xyorder( endpoint1, endpoint2 ) < 0) {
-        lineSegment->lPp = endpoint1;
-        lineSegment->lP = *endpoint1;
-        lineSegment->rP = *endpoint2;
+    
+    // Determine which is endpoint is leftmost.
+    if ( xyorder( endpoint1, endpoint2 ) < 0 ) {
+        lineSegment->leftPointPointer = endpoint1;
+        lineSegment->leftPoint = *endpoint1;
+        lineSegment->rightPoint = *endpoint2;
     }
     else {
-        lineSegment->rP = *endpoint1;
-        lineSegment->lP = *endpoint2;
-        lineSegment->lPp = endpoint2;
+        lineSegment->rightPoint = *endpoint1;
+        lineSegment->leftPoint = *endpoint2;
+        lineSegment->leftPointPointer = endpoint2;
     }
     lineSegment->above = (SweepLineSegment*)0;
     lineSegment->below = (SweepLineSegment*)0;
@@ -434,12 +432,12 @@ bool SweepLine::intersect( SweepLineSegment* s1, SweepLineSegment* s2 )
     
     // test for existence of an intersect point
     double lsign, rsign;
-    lsign = isLeft(s1->lP, s1->rP, s2->lP);    // s2 left point sign
-    rsign = isLeft(s1->lP, s1->rP, s2->rP);    // s2 right point sign
+    lsign = isLeft(s1->leftPoint, s1->rightPoint, s2->leftPoint);    // s2 left point sign
+    rsign = isLeft(s1->leftPoint, s1->rightPoint, s2->rightPoint);    // s2 right point sign
     if (lsign * rsign > 0) // s2 endpoints have same sign relative to s1
         return false;      // => on same side => no intersect is possible
-    lsign = isLeft(s2->lP, s2->rP, s1->lP);    // s1 left point sign
-    rsign = isLeft(s2->lP, s2->rP, s1->rP);    // s1 right point sign
+    lsign = isLeft(s2->leftPoint, s2->rightPoint, s1->leftPoint);    // s1 left point sign
+    rsign = isLeft(s2->leftPoint, s2->rightPoint, s1->rightPoint);    // s1 right point sign
     if (lsign * rsign > 0) // s1 endpoints have same sign relative to s2
         return false;      // => on same side => no intersect is possible
     // the segments s1 and s2 straddle each other
@@ -454,8 +452,8 @@ bool SweepLine::intersect( SweepLineSegment* s1, SweepLineSegment* s2 )
  */
 bool simple_Polygon( Polygon &polygon )
 {
-    EventQueue eventQueue(polygon);
-    SweepLine sweepline(polygon);
+    EventQueue eventQueue( polygon );
+    SweepLine sweepline( polygon );
     Event* currentEvent;
     SweepLineSegment* currentSegment;
     

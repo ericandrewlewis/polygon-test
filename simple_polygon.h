@@ -51,6 +51,8 @@ public:
 
 typedef struct Polygon Polygon;
 
+class SweepLineSegment;
+
 /**
  * Check whether a polygon is simple (none of its lines intersect) or not.
  *
