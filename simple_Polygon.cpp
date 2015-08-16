@@ -61,9 +61,6 @@ inline double isLeft( Point P0, Point P1, Point P2 )
     return (P1.x - P0.x)*(P2.y - P0.y) - (P2.x - P0.x)*(P1.y - P0.y);
 }
 
-// Make `Event` an alias to the `_event` data structure. Weird.
-typedef struct _event Event;
-
 /**
  * An event, which relates to a line segment endpoint.
  */
@@ -253,10 +250,10 @@ public:
     bool operator< (const SweepLineSegment& otherLineSegment)
     {
         // If these two segments share a left vertex, compare the right points.
-        if (this->leftPointPointer == otherLineSegment.leftPointPointer) {
+        if ( this->leftPointPointer == otherLineSegment.leftPointPointer ) {
             // Same point - the two segments share a vertex.
             // use y coord of right end points
-            if (this->rightPoint.y < otherLineSegment.rightPoint.y)
+            if ( this->rightPoint.y < otherLineSegment.rightPoint.y )
                 return true;
             else
                 return false;

@@ -51,6 +51,9 @@ public:
 
 typedef struct Polygon Polygon;
 
+// Make `Event` an alias to the `_event` data structure. Weird.
+typedef struct _event Event;
+
 class SweepLineSegment;
 
 /**
