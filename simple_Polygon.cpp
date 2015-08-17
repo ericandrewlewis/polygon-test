@@ -31,11 +31,18 @@
  */
 enum SEG_SIDE { LEFT, RIGHT };
 
+// Make `Event` an alias to the `_event` data structure. Weird.
+typedef struct _event Event;
+
+class SweepLineSegment;
+
 /*
  * Determine the xy order of two points.
  *
  * Ordered first by ascending x coordinate, and then ascending y coordinate.
  *
+ * @param Point* p1
+ * @param Point* p2
  * @return 1 if p1 > p2, -1 if p1 < p2, and 0 if equal.
  */
 int xyorder( Point* p1, Point* p2 )
@@ -93,6 +100,9 @@ struct _event {
 
 /*
  * qsort compare two events.
+ *
+ * @param Event* v1
+ * @param Event* v2
  */
 int E_compare( const void* v1, const void* v2 )
 {
@@ -211,22 +221,17 @@ public:
     /*
      * polygon edge i is V[i] to V[i+1]
      */
-    int      edge;
+    int edge;
     
     /*
      * leftmost vertex point.
      */
-    Point    leftPoint;
+    Point* leftPoint;
     
     /*
      * rightmost vertex point.
      */
-    Point    rightPoint;
-    
-    /*
-     * The pointer to leftmost vertex in poly V.
-     */
-    Point*   leftPointPointer;
+    Point* rightPoint;
     
     /*
      * The segment above this one.
@@ -250,16 +255,16 @@ public:
     bool operator< (const SweepLineSegment& otherLineSegment)
     {
         // If these two segments share a left vertex, compare the right points.
-        if ( this->leftPointPointer == otherLineSegment.leftPointPointer ) {
+        if ( this->leftPoint == otherLineSegment.leftPoint ) {
             // Same point - the two segments share a vertex.
             // use y coord of right end points
-            if ( this->rightPoint.y < otherLineSegment.rightPoint.y )
+            if ( this->rightPoint->y < otherLineSegment.rightPoint->y )
                 return true;
             else
                 return false;
         }
         
-        return isLeft(this->leftPoint, this->rightPoint, otherLineSegment.leftPoint) > 0;
+        return isLeft(*this->leftPoint, *this->rightPoint, *otherLineSegment.leftPoint) > 0;
     }
     
     /*
@@ -347,14 +352,12 @@ SweepLineSegment* SweepLine::add( Event* event )
     
     // Determine which is endpoint is leftmost.
     if ( xyorder( endpoint1, endpoint2 ) < 0 ) {
-        lineSegment->leftPointPointer = endpoint1;
-        lineSegment->leftPoint = *endpoint1;
-        lineSegment->rightPoint = *endpoint2;
+        lineSegment->leftPoint = endpoint1;
+        lineSegment->rightPoint = endpoint2;
     }
     else {
-        lineSegment->rightPoint = *endpoint1;
-        lineSegment->leftPoint = *endpoint2;
-        lineSegment->leftPointPointer = endpoint2;
+        lineSegment->rightPoint = endpoint1;
+        lineSegment->leftPoint = endpoint2;
     }
     lineSegment->above = (SweepLineSegment*)0;
     lineSegment->below = (SweepLineSegment*)0;
@@ -429,12 +432,12 @@ bool SweepLine::intersect( SweepLineSegment* s1, SweepLineSegment* s2 )
     
     // test for existence of an intersect point
     double lsign, rsign;
-    lsign = isLeft(s1->leftPoint, s1->rightPoint, s2->leftPoint);    // s2 left point sign
-    rsign = isLeft(s1->leftPoint, s1->rightPoint, s2->rightPoint);    // s2 right point sign
+    lsign = isLeft(*s1->leftPoint, *s1->rightPoint, *s2->leftPoint);    // s2 left point sign
+    rsign = isLeft(*s1->leftPoint, *s1->rightPoint, *s2->rightPoint);    // s2 right point sign
     if (lsign * rsign > 0) // s2 endpoints have same sign relative to s1
         return false;      // => on same side => no intersect is possible
-    lsign = isLeft(s2->leftPoint, s2->rightPoint, s1->leftPoint);    // s1 left point sign
-    rsign = isLeft(s2->leftPoint, s2->rightPoint, s1->rightPoint);    // s1 right point sign
+    lsign = isLeft(*s2->leftPoint, *s2->rightPoint, *s1->leftPoint);    // s1 left point sign
+    rsign = isLeft(*s2->leftPoint, *s2->rightPoint, *s1->rightPoint);    // s1 right point sign
     if (lsign * rsign > 0) // s1 endpoints have same sign relative to s2
         return false;      // => on same side => no intersect is possible
     // the segments s1 and s2 straddle each other

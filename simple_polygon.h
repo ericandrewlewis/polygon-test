@@ -1,8 +1,8 @@
-// ===================================================================
-// simple_polygon.h - Class for a polygon
-// Written by Glenn Burkhardt (2014)
 /*
  * simple_polygon.h
+ *
+ * Class for a polygon
+ * Written by Glenn Burkhardt (2014)
  *
  */
 
@@ -11,18 +11,18 @@
 
 #include <stdlib.h>
 
-/**
+/*
  * A single x,y coordinate point.
  */
 typedef struct {
     double x, y;
 } Point;
 
-/**
+/*
  * A Polygon data structure.
  */
 struct Polygon {
-    /**
+    /*
      * @constructor
      * @param npts The number of distinct points on the polygon.
      */
@@ -36,11 +36,11 @@ struct Polygon {
     }
 
 public:
-    /**
+    /*
      * The number of points of the polygon.
      */
     int n;
-    /**
+    /*
      * A pointer that should hold the points.
      * 
      * The points should be a list of all distinct points. 
@@ -51,12 +51,7 @@ public:
 
 typedef struct Polygon Polygon;
 
-// Make `Event` an alias to the `_event` data structure. Weird.
-typedef struct _event Event;
-
-class SweepLineSegment;
-
-/**
+/*
  * Check whether a polygon is simple (none of its lines intersect) or not.
  *
  * @param Polygon
