@@ -146,7 +146,6 @@ public:
     ~EventQueue(void)
     {
         delete[] Eq;
-//        delete[] Edata;
     }
     
     // next event on queue
