@@ -101,6 +101,8 @@ struct _event {
 /*
  * qsort compare two events.
  *
+ * @todo This seems overly complex.
+ *
  * @param Event* v1
  * @param Event* v2
  */
