@@ -134,12 +134,7 @@ class EventQueue {
      * The index of the next event on the queue.
      */
     int nextEventIndex;
-    
-    /*
-     * The array of all events.
-     */
-    Event* Edata;
-    
+
     /*
      * Sorted list of event pointers.
      */
@@ -151,7 +146,7 @@ public:
     ~EventQueue(void)
     {
         delete[] Eq;
-        delete[] Edata;
+//        delete[] Edata;
     }
     
     // next event on queue
@@ -167,23 +162,20 @@ EventQueue::EventQueue( Polygon &P )
     nextEventIndex = 0;
     // 2 vertex events for each edge.
     numberOfEvents = 2 * P.n;
-    Edata = new Event[numberOfEvents];
     Eq = new Event*[numberOfEvents];
     
-    // Initialize Eq array pointers
-    for ( int i = 0; i < numberOfEvents; i++ )
-        Eq[i] = &Edata[i];
-    
-    // Initialize the event queue with edge segment endpoints.
+    // Populate each event's data from the Polygon's points.
     for ( int i = 0; i < P.n; i++ ) {
-        // Define the event data based on the point.
+        Eq[2*i] = new Event;
         Eq[2*i]->edge = i;
         Eq[2*i]->point = &(P.V[i]);
         Eq[2*i]->otherEnd = Eq[2*i+1];
-        Eq[2*i]->seg = Eq[2*i+1]->seg = 0;
+        Eq[2*i]->seg = 0;
         
+        Eq[2*i+1] = new Event;
         Eq[2*i+1]->edge = i;
         Eq[2*i+1]->otherEnd = Eq[2*i];
+        Eq[2*i+1]->seg = 0;
         
         Point *pi1 = ( i + 1 < P.n ) ? &( P.V[i+1] ) : &( P.V[0] );
         Eq[2*i+1]->point = pi1;
@@ -288,14 +280,14 @@ public:
 typedef AvlNode<SweepLineSegment*> Tnode;
 
 /*
- * The sweep line stores all line segments that are intersecting
+ * The sweep line keeps track of line segments that are intersecting
  * at the currently processing line segment endpoint.
  */
 class SweepLine {
     /*
      * Number of vertices in polygon.
      */
-    int      nv;
+    int nv;
     
     /*
      * Initial Polygon.
@@ -309,7 +301,9 @@ class SweepLine {
 public:
     // constructor
     SweepLine(Polygon &P)
-    { nv = P.n; polygon = &P; }
+    {
+        nv = P.n; polygon = &P;
+    }
     
     // destructor
     ~SweepLine(void)
@@ -325,10 +319,10 @@ public:
         cleanTree(p->Subtree(AvlNode<SweepLineSegment*>::RIGHT));
     }
     
-    SweepLineSegment*   add( Event* );
-    SweepLineSegment*   find( Event* );
-    bool     intersect( SweepLineSegment*, SweepLineSegment* );
-    void     remove( SweepLineSegment* );
+    SweepLineSegment* add( Event* );
+    SweepLineSegment* find( Event* );
+    bool intersect( SweepLineSegment*, SweepLineSegment* );
+    void remove( SweepLineSegment* );
 };
 
 /*
