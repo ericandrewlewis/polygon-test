@@ -134,7 +134,7 @@ class EventQueue {
      * The index of the next event on the queue.
      */
     int nextEventIndex;
-
+    
     /*
      * Sorted list of event pointers.
      */
@@ -166,12 +166,13 @@ EventQueue::EventQueue( Polygon &P )
     // Populate each event's data from the Polygon's points.
     for ( int i = 0; i < P.n; i++ ) {
         Eq[2*i] = new Event;
+        Eq[2*i+1] = new Event;
+
         Eq[2*i]->edge = i;
         Eq[2*i]->point = &(P.V[i]);
         Eq[2*i]->otherEnd = Eq[2*i+1];
         Eq[2*i]->seg = 0;
         
-        Eq[2*i+1] = new Event;
         Eq[2*i+1]->edge = i;
         Eq[2*i+1]->otherEnd = Eq[2*i];
         Eq[2*i+1]->seg = 0;
