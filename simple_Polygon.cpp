@@ -45,12 +45,12 @@ class SweepLineSegment;
  * @param Point* p2
  * @return 1 if p1 > p2, -1 if p1 < p2, and 0 if equal.
  */
-int xyorder( Point* p1, Point* p2 )
+int xyorder( Point p1, Point p2 )
 {
-    if (p1->x > p2->x) return 1;
-    if (p1->x < p2->x) return (-1);
-    if (p1->y > p2->y) return 1;
-    if (p1->y < p2->y) return (-1);
+    if (p1.x > p2.x) return 1;
+    if (p1.x < p2.x) return (-1);
+    if (p1.y > p2.y) return 1;
+    if (p1.y < p2.y) return (-1);
     return 0;
 }
 
@@ -109,7 +109,7 @@ int E_compare( const void* v1, const void* v2 )
     Event** pe1 = (Event**)v1;
     Event** pe2 = (Event**)v2;
     
-    int r = xyorder( (*pe1)->point, (*pe2)->point );
+    int r = xyorder( *(*pe1)->point, *(*pe2)->point );
     if (r == 0) {
         if ((*pe1)->type == (*pe2)->type) return 0;
         if ((*pe1)->type == LEFT) return -1;
@@ -181,7 +181,7 @@ EventQueue::EventQueue( Polygon &P )
         Eq[2*i+1]->point = pi1;
         
         // Set the event as either left or right bound.
-        if ( xyorder( &P.V[i], pi1) < 0 ) {
+        if ( xyorder( P.V[i], *pi1 ) < 0 ) {
             Eq[2*i]->type = LEFT;
             Eq[2*i+1]->type = RIGHT;
         }
@@ -345,7 +345,7 @@ SweepLineSegment* SweepLine::add( Event* event )
     Point* endpoint2 = eN;
     
     // Determine which is endpoint is leftmost.
-    if ( xyorder( endpoint1, endpoint2 ) < 0 ) {
+    if ( xyorder( *endpoint1, *endpoint2 ) < 0 ) {
         lineSegment->leftPoint = endpoint1;
         lineSegment->rightPoint = endpoint2;
     }
